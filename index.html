@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microbiome Simulation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #4a90e2;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="number"], input[type="button"] {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        input[type="button"] {
+            background-color: #4a90e2;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="button"]:hover {
+            background-color: #357ab8;
+        }
+        #results {
+            margin-top: 20px;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            background-color: #eaeaea;
+            margin-top: 20px;
+            border-radius: 4px;
+            padding: 10px; /* Added padding for space inside the canvas */
+            display: block; /* Ensures the canvas is treated as a block element */
+            margin-left: auto; /* Center the canvas */
+            margin-right: auto; /* Center the canvas */
+        }
+        .legend {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+        }
+        .legend div {
+            display: flex;
+            align-items: center;
+        }
+        .legend div span {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .gut-health-tips {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #eaeaea;
+            border-radius: 4px;
+        }
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Microbiome Simulation</h1>
+        <label for="numBacteria">Total Number of Bacteria:</label>
+        <input type="number" id="numBacteria" value="100">
+        
+        <label for="numViruses">Number of Viruses:</label>
+        <input type="number" id="numViruses" value="10">
+        
+        <label for="numFungi">Number of Fungi:</label>
+        <input type="number" id="numFungi" value="10">
+        
+        <label for="numIterations">Number of Iterations:</label>
+        <input type="number" id="numIterations" value="50">
+        
+        <label for="healthyBacteriaRatio">Healthy Bacteria Ratio (0-1):</label>
+        <input type="number" id="healthyBacteriaRatio" value="0.85" step="0.01" min="0" max="1">
+        
+        <input type="button" value="Run Simulation" onclick="runSimulation()">
+
+        <div id="results"></div>
+        <canvas id="canvas" width="500" height="500"></canvas>
+
+        <div class="legend">
+            <div><span style="background-color: blue;"></span> Good Bacteria</div>
+            <div><span style="background-color: orange;"></span> Bad Bacteria</div>
+            <div><span style="background-color: red;"></span> Virus</div>
+            <div><span style="background-color: green;"></span> Fungi</div>
+        </div>
+        <p><strong>Graph Units:</strong> Healthy Good Bacteria Count</p>
+
+        <div class="gut-health-tips">
+            <h3>Ways to Improve Gut Health</h3>
+            <ul>
+                <li>Diversity of Microbiota: A diverse range of microorganisms promotes resilience and functionality in the gut.</li>
+                <li>Balanced Diet: A diet rich in fruits, vegetables, whole grains, and lean proteins supports gut health.</li>
+                <li>Fermented Foods: Inclusion of fermented foods (e.g., yogurt, kefir, sauerkraut) introduces beneficial probiotics.</li>
+                <li>Prebiotics: Consumption of prebiotic foods (e.g., garlic, onions, bananas) nourishes healthy gut bacteria.</li>
+                <li>Hydration: Adequate water intake is essential for digestion and maintaining mucosal lining in the gut.</li>
+                <li>Regular Physical Activity: Exercise promotes gut motility and can positively influence the composition of gut microbiota.</li>
+                <li>Stress Management: Chronic stress can negatively impact gut health; practices like meditation and yoga can help.</li>
+                <li>Adequate Sleep: Quality sleep is crucial for overall health, including the health of the gut microbiome.</li>
+                <li>Limit Processed Foods: Reducing intake of processed foods and sugars can help maintain a healthy microbiome.</li>
+                <li>Avoiding Antibiotics When Possible: Overuse of antibiotics can disrupt the balance of gut bacteria; use them only when necessary.</li>
+                <li>Moderate Alcohol Consumption: Excessive alcohol can harm gut health; moderation is key.</li>
+                <li>Smoking Cessation: Smoking negatively affects gut microbiota and overall health; quitting can improve gut health.</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2023 Microbiome Simulation. All rights reserved.</p>
+    </footer>
+
+    <script>
+        class Microorganism {
+            constructor(name, type, health) {
+                this.name = name;
+                this.type = type;
+                this.health = health;
+                this.position = [Math.random() * 10, Math.random() * 10];
+            }
+
+            interact(other) {
+                if (this.type === 'good_bacteria' && other.type === 'bad_bacteria') {
+                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    other.health -= damage;
+                } else if (this.type === 'bad_bacteria' && other.type === 'good_bacteria') {
+                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    other.health -= damage;
+                } else if (this.type === 'good_bacteria' && other.type === 'virus') {
+                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    this.health -= damage;
+                } else if (this.type === 'fungi' && other.type === 'good_bacteria') {
+                    const recovery = 0.05 * other.health * (0.5 + Math.random());
+                    this.health += recovery;
+                } else if (this.type === 'fungi' && other.type === 'bad_bacteria') {
+                    const damage = 0.05 * other.health * (0.5 + Math.random());
+                    this.health -= damage;
+                }
+                this.health = Math.max(this.health, 0);
+            }
+
+            isHealthy() {
+                return this.type === "good_bacteria" ? this.health > 0.1 : this.health > 0.3;
+            }
+        }
+
+        class MicrobiomeSimulation {
+            constructor(numBacteria, numViruses, numFungi, numIterations, healthyBacteriaRatio) {
+                this.numBacteria = numBacteria;
+                this.numViruses = numViruses;
+                this.numFungi = numFungi;
+                this.numIterations = numIterations;
+                this.healthyBacteriaRatio = healthyBacteriaRatio;
+                this.microorganisms = this.initializeMicroorganisms();
+            }
+
+            initializeMicroorganisms() {
+                const microorganisms = [];
+                const numGoodBacteria = Math.floor(this.numBacteria * this.healthyBacteriaRatio);
+                const numBadBacteria = this.numBacteria - numGoodBacteria;
+
+                for (let i = 0; i < numGoodBacteria; i++) {
+                    microorganisms.push(new Microorganism(`GoodBacteria_${i}`, 'good_bacteria', Math.random() * 0.5 + 0.5));
+                }
+                for (let i = 0; i < numBadBacteria; i++) {
+                    microorganisms.push(new Microorganism(`BadBacteria_${i}`, 'bad_bacteria', Math.random() * 0.4 + 0.1));
+                }
+                for (let i = 0; i < this.numViruses; i++) {
+                    microorganisms.push(new Microorganism(`Virus_${i}`, 'virus', Math.random() * 0.4 + 0.1));
+                }
+                for (let i = 0; i < this.numFungi; i++) {
+                    microorganisms.push(new Microorganism(`Fungi_${i}`, 'fungi', Math.random() * 0.5 + 0.5));
+                }
+                return microorganisms;
+            }
+
+            simulate() {
+                const healthyCounts = [];
+                for (let iteration = 0; iteration < this.numIterations; iteration++) {
+                    for (let i = 0; i < this.microorganisms.length; i++) {
+                        for (let j = 0; j < this.microorganisms.length; j++) {
+                            if (i !== j) {
+                                this.microorganisms[i].interact(this.microorganisms[j]);
+                            }
+                        }
+                    }
+                    const healthyCount = this.microorganisms.filter(m => m.type === 'good_bacteria' && m.isHealthy()).length;
+                    healthyCounts.push(healthyCount);
+                }
+                return healthyCounts;
+            }
+
+            visualizeMicrobiome() {
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                this.microorganisms.forEach(m => {
+                    ctx.beginPath();
+                    ctx.arc(m.position[0] * 50, m.position[1] * 50, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = m.type === 'good_bacteria' ? 'blue' :
+                                    m.type === 'bad_bacteria' ? 'orange' :
+                                    m.type === 'virus' ? 'red' : 'green';
+                    ctx.fill();
+                });
+            }
+        }
+
+        function runSimulation() {
+            const numBacteria = parseInt(document.getElementById('numBacteria').value);
+            const numViruses = parseInt(document.getElementById('numViruses').value);
+            const numFungi = parseInt(document.getElementById('numFungi').value);
+            const numIterations = parseInt(document.getElementById('numIterations').value);
+            const healthyBacteriaRatio = parseFloat(document.getElementById('healthyBacteriaRatio').value);
+
+            const simulation = new MicrobiomeSimulation(numBacteria, numViruses, numFungi, numIterations, healthyBacteriaRatio);
+            const healthyCounts = simulation.simulate();
+            simulation.visualizeMicrobiome();
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<h2>Healthy Good Bacteria Count Over Time</h2>';
+            const canvas = document.createElement('canvas');
+            canvas.width = 500;
+            canvas.height = 300;
+            resultsDiv.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            // Determine the maximum healthy count for scaling
+            const maxHealthyCount = Math.max(...healthyCounts);
+            const scaleFactor = maxHealthyCount > 0 ? 300 / maxHealthyCount : 1; // Prevent division by zero
+
+            ctx.beginPath();
+            ctx.moveTo(0, 300 - healthyCounts[0] * scaleFactor);
+            for (let i = 1; i < healthyCounts.length; i++) {
+                ctx.lineTo(i * (500 / healthyCounts.length), 300 - healthyCounts[i] * scaleFactor);
+            }
+            ctx.strokeStyle = 'blue';
+            ctx.stroke();
+            ctx.fillText("Iterations", 450, 290);
+            ctx.fillText("Healthy Bacteria Count", 10, 10);
+
+            // Adding increments on the Y-axis based on the maximum healthy count
+            ctx.fillStyle = 'black';
+            const yIncrement = Math.ceil(maxHealthyCount / 10); // Calculate increments based on max count
+            for (let i = 0; i <= 10; i++) {
+                const yValue = i * yIncrement;
+                ctx.fillText(yValue, 5, 300 - (yValue * scaleFactor)); // Adjusting the Y-axis labels
+            }
+        }
+    </script>
+</body>
+</html>
