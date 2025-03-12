@@ -52,10 +52,10 @@
             background-color: #eaeaea;
             margin-top: 20px;
             border-radius: 4px;
-            padding: 10px; /* Added padding for space inside the canvas */
-            display: block; /* Ensures the canvas is treated as a block element */
-            margin-left: auto; /* Center the canvas */
-            margin-right: auto; /* Center the canvas */
+            padding: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .legend {
             display: flex;
@@ -73,17 +73,29 @@
             display: inline-block;
             margin-right: 5px;
         }
-        .gut-health-tips {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #eaeaea;
-            border-radius: 4px;
-        }
+        .legend div:nth-child(1) span {
+            background-color: blue; 
+        }   /* Good Bacteria */
+        .legend div:nth-child(2) span {
+            background-color: orange;
+        } /* Bad Bacteria */
+        .legend div:nth-child(3) span { 
+            background-color: red;
+        }    /* Virus */
+        .legend div:nth-child(4) span { 
+            background-color: green;
+        }  /* Fungi */
         footer {
             text-align: center;
             margin-top: 20px;
             font-size: 0.9em;
             color: #777;
+        }
+        .gut-health-tips {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #eaeaea;
+            border-radius: 4px;
         }
     </style>
 </head>
@@ -111,12 +123,11 @@
         <canvas id="canvas" width="500" height="500"></canvas>
 
         <div class="legend">
-            <div><span style="background-color: blue;"></span> Good Bacteria</div>
-            <div><span style="background-color: orange;"></span> Bad Bacteria</div>
-            <div><span style="background-color: red;"></span> Virus</div>
-            <div><span style="background-color: green;"></span> Fungi</div>
+            <div><span></span> Good Bacteria</div>
+            <div><span></span> Bad Bacteria</div>
+            <div><span></span> Virus</div>
+            <div><span></span> Fungi</div>
         </div>
-        <p><strong>Graph Units:</strong> Healthy Good Bacteria Count</p>
 
         <div class="gut-health-tips">
             <h3>Ways to Improve Gut Health</h3>
@@ -135,6 +146,7 @@
                 <li>Smoking Cessation: Smoking negatively affects gut microbiota and overall health; quitting can improve gut health.</li>
             </ul>
         </div>
+
     </div>
 
     <footer>
@@ -152,26 +164,33 @@
 
             interact(other) {
                 if (this.type === 'good_bacteria' && other.type === 'bad_bacteria') {
-                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    const damage = 0.0005 * other.health * (0.3 + Math.random()); 
                     other.health -= damage;
                 } else if (this.type === 'bad_bacteria' && other.type === 'good_bacteria') {
-                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    const damage = 0.005 * other.health * (0.5 + Math.random()); 
                     other.health -= damage;
                 } else if (this.type === 'good_bacteria' && other.type === 'virus') {
-                    const damage = 0.1 * other.health * (0.5 + Math.random());
+                    const damage = 0.0005 * other.health * (0.3 + Math.random()); 
                     this.health -= damage;
                 } else if (this.type === 'fungi' && other.type === 'good_bacteria') {
                     const recovery = 0.05 * other.health * (0.5 + Math.random());
                     this.health += recovery;
                 } else if (this.type === 'fungi' && other.type === 'bad_bacteria') {
                     const damage = 0.05 * other.health * (0.5 + Math.random());
-                    this.health -= damage;
+                    this.health += damage; // Fungi can also damage bad bacteria
                 }
+
+                // Gradual health decline for good bacteria (slow and steady death)
+                if (this.type === 'good_bacteria') {
+                    this.health -= 0.0001;
+                }
+
                 this.health = Math.max(this.health, 0);
+                this.health = Math.min(this.health, 1); // Health cannot exceed 1
             }
 
             isHealthy() {
-                return this.type === "good_bacteria" ? this.health > 0.1 : this.health > 0.3;
+                return this.type === "good_bacteria" ? this.health > 0.005 : this.health > 0.005; // Adjusted health threshold for survival
             }
         }
 
@@ -230,7 +249,8 @@
                     ctx.arc(m.position[0] * 50, m.position[1] * 50, 5, 0, Math.PI * 2);
                     ctx.fillStyle = m.type === 'good_bacteria' ? 'blue' :
                                     m.type === 'bad_bacteria' ? 'orange' :
-                                    m.type === 'virus' ? 'red' : 'green';
+                                    m.type === 'virus' ? 'red' :
+                                    m.type === 'fungi' ? 'green' : 'black';
                     ctx.fill();
                 });
             }
@@ -257,24 +277,34 @@
 
             // Determine the maximum healthy count for scaling
             const maxHealthyCount = Math.max(...healthyCounts);
-            const scaleFactor = maxHealthyCount > 0 ? 300 / maxHealthyCount : 1; // Prevent division by zero
+            const yScale = canvas.height / maxHealthyCount;
 
+            // Draw the graph
             ctx.beginPath();
-            ctx.moveTo(0, 300 - healthyCounts[0] * scaleFactor);
-            for (let i = 1; i < healthyCounts.length; i++) {
-                ctx.lineTo(i * (500 / healthyCounts.length), 300 - healthyCounts[i] * scaleFactor);
-            }
+            ctx.moveTo(0, canvas.height - healthyCounts[0] * yScale);
+            healthyCounts.forEach((count, index) => {
+                const x = (index / (healthyCounts.length - 1)) * canvas.width; // Adjusted for proper x-axis scaling
+                const y = canvas.height - count * yScale;
+                ctx.lineTo(x, y);
+            });
             ctx.strokeStyle = 'blue';
+            ctx.lineWidth = 2;
             ctx.stroke();
-            ctx.fillText("Iterations", 450, 290);
-            ctx.fillText("Healthy Bacteria Count", 10, 10);
 
-            // Adding increments on the Y-axis based on the maximum healthy count
-            ctx.fillStyle = 'black';
-            const yIncrement = Math.ceil(maxHealthyCount / 10); // Calculate increments based on max count
-            for (let i = 0; i <= 10; i++) {
-                const yValue = i * yIncrement;
-                ctx.fillText(yValue, 5, 300 - (yValue * scaleFactor)); // Adjusting the Y-axis labels
+            // Draw y-axis increments
+            const increment = Math.ceil(maxHealthyCount / 5);
+            ctx.fillStyle = '#333';
+            for (let i = 0; i <= 5; i++) {
+                const y = canvas.height - (i * increment * yScale);
+                ctx.fillText(i * increment, 5, y);
+            }
+
+            // Draw x-axis increments
+            const xIncrement = Math.ceil(healthyCounts.length / 5);
+            ctx.fillStyle = '#333';
+            for (let i = 0; i <= 5; i++) {
+                const x = (i * xIncrement) * (canvas.width / (healthyCounts.length - 1));
+                ctx.fillText(i * xIncrement, x, canvas.height - 5);
             }
         }
     </script>
